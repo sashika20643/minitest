@@ -114,8 +114,8 @@ def download_file(file_id):
         upload_subtitle_to_firebase(subtitle_file_path, destination_blob_name)
         
         # Clean up: Remove the local VTT and video files
-        # os.remove(subtitle_file_path)
-        # os.remove(video_file_path)
+        os.remove(subtitle_file_path)
+        os.remove(video_file_path)
 
         return f"Subtitles uploaded to Firebase Storage as {destination_blob_name}"
     except Exception as e:
