@@ -213,6 +213,7 @@ def model():
                 break
         cap.release()
         cv2.destroyAllWindows()
+        return "model"
 
 if __name__ == '__main__':
 
