@@ -318,7 +318,12 @@ def uploadsub():
 
 @app.route('/model', methods=['GET'])
 def model():
-    model = tf.keras.models.load_model('action.h5')
+    # Get the absolute path to the directory containing this script
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Specify the path to the model file
+    model_path = os.path.join(base_dir, 'action.h5')
+    model = tf.keras.models.load_model(model_path)
     actions = np.array(['hello', 'thanks', 'iloveyou'])
     # 1. New detection variables
     sentence = []
