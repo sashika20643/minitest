@@ -3,17 +3,151 @@ import firebase_admin
 from firebase_admin import credentials, storage
 import cv2
 from matplotlib import pyplot as plt
-import mediapipe as mp
+
 import numpy as np
-import tensorflow as tf
+
 import datetime
 import os
+from pymongo import MongoClient
+from bson import ObjectId
+from urllib.parse import quote
+
+
+
+
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 cred = credentials.Certificate("./social-lips-firebase-adminsdk-c28zn-d607a10c33.json")
 firebase_admin.initialize_app(cred)
 
+
 app = Flask(__name__)
+# app.config['MONGO_URI'] = 'mongodb+srv://ishan:1998@cluster0.zhsvvlw.mongodb.net/?retryWrites=true&w=majority'
+# mongo = MongoClient(app.config['MONGO_URI'])
+# db = mongo.test
+def get_video(file_id):
+    # Replace the following connection string with your MongoDB connection string
+    mongo_uri = "mongodb+srv://ishan:1998@cluster0.zhsvvlw.mongodb.net/?retryWrites=true&w=majority"
+    
+    # Connect to MongoDB
+    client = MongoClient(mongo_uri)
+    
+    # Specify the database and collection
+    db = client.test
+    collection = db.posts
+    
+    # Convert the file_id string to ObjectId
+    object_id = ObjectId(file_id)
+
+    # Prepare the query
+    query = {"_id": object_id}
+    
+    # Fetch the document
+    result = collection.find_one(query)
+
+    # Check if the document was found
+    if result:
+        img_url = result.get("img_url", "")
+        print(f"img_url for file_id {file_id}: {img_url}")
+        return img_url
+    else:
+        print(f"No document found with file_id {file_id}")
+
+    # Close the MongoDB connection
+    client.close()
+
+
+def show_all_posts():
+    # Replace the following connection string with your MongoDB connection string
+    mongo_uri = "mongodb+srv://ishan:1998@cluster0.zhsvvlw.mongodb.net/?retryWrites=true&w=majority"
+    
+    try:
+        # Connect to MongoDB
+        client = MongoClient(mongo_uri)
+        
+        # Specify the database and collection
+        db = client.test
+        collection = db.posts
+        
+        # Fetch all posts
+        all_posts = collection.find()
+
+        # Check if there are documents in the collection
+        if collection.count_documents({}) == 0:
+            print("No documents found in the 'posts' collection.")
+        else:
+            # Print each document
+            for post in all_posts:
+                print(post)
+        
+        # Close the MongoDB connection
+        client.close()
+    
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+
+
+# Call the function to show all posts
+
+
+def update_subtitle_status(file_id):
+    # Replace the following connection string with your MongoDB connection string
+    mongo_uri = "mongodb+srv://ishan:1998@cluster0.zhsvvlw.mongodb.net/?retryWrites=true&w=majority"
+    
+    # Connect to MongoDB
+    client = MongoClient(mongo_uri)
+    
+    # Specify the database and collection
+    db = client.test
+    collection = db.posts
+    
+
+
+
+    
+    # Convert the file_id string to ObjectId
+    object_id = ObjectId(file_id)
+
+    # Prepare the query
+    query = {"_id": object_id}
+    
+    # Prepare the update
+    update = {"$set": {"subtitle_status": "generated"}}
+
+    # Perform the update
+    result = collection.update_one(query, update)
+    
+    # Check if the update was successful
+    if result.modified_count > 0:
+        print(f"Subtitle status updated for file_id {file_id}")
+    else:
+        print(f"No document found with file_id {file_id}")
+
+    # Close the MongoDB connection
+    client.close()
+
+
+
+
+def generate_signed_url(bucket_name, blob_name, expiration):
+    storage_client = storage.bucket(bucket_name)
+    blob = storage_client.blob(blob_name)
+
+    # Generate a signed URL valid for the specified duration
+    signed_url = blob.generate_signed_url(expiration=expiration)
+
+    return signed_url
+
+def get_video_url(file_id):
+    bucket_name = "social-lips.appspot.com"  # Replace with your GCS bucket name
+    blob_name = f"posts/video/{file_id}.mp4"
+    expiration_time = 300  # Adjust the expiration time (in seconds) as needed
+
+    signed_url = generate_signed_url(bucket_name, blob_name, expiration_time)
+
+    return signed_url
 
 # Function to download a video from Firebase Storage
 def download_video(file_id, save_directory):
@@ -43,58 +177,58 @@ def upload_subtitle_to_firebase(subtitle_file_path, destination_blob_name):
     blob.upload_from_filename(subtitle_file_path)
     print("Subtitle uploaded")
     return 1
-mp_holistic = mp.solutions.holistic # Holistic model
-mp_drawing = mp.solutions.drawing_utils # Drawing utilities
+# mp_holistic = mp.solutions.holistic # Holistic model
+# mp_drawing = mp.solutions.drawing_utils # Drawing utilities
 
-def mediapipe_detection(image, model):
-  image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # COLOR CONVERSION BGR 2 RGB
-  image.flags.writeable = False                   # Image is no longer writeable
-  results = model.process(image)                  # Make prediction
-  image.flags.writeable = True                    # Image is now writeable
-  image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # COLOR CONVERSION RGB 2 BGR
-  return image, results
-def draw_landmarks(image, results):
-    mp_drawing.draw_landmarks(image, results.face_landmarks, mp_holistic.FACEMESH_TESSELATION) # Draw face connections
-    mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS) # Draw pose connections
-    mp_drawing.draw_landmarks(image, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS) # Draw-left hand connections
-    mp_drawing.draw_landmarks(image, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS) #Draw right hand connections
+# def mediapipe_detection(image, model):
+#   image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # COLOR CONVERSION BGR 2 RGB
+#   image.flags.writeable = False                   # Image is no longer writeable
+#   results = model.process(image)                  # Make prediction
+#   image.flags.writeable = True                    # Image is now writeable
+#   image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # COLOR CONVERSION RGB 2 BGR
+#   return image, results
+# def draw_landmarks(image, results):
+#     mp_drawing.draw_landmarks(image, results.face_landmarks, mp_holistic.FACEMESH_TESSELATION) # Draw face connections
+#     mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS) # Draw pose connections
+#     mp_drawing.draw_landmarks(image, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS) # Draw-left hand connections
+#     mp_drawing.draw_landmarks(image, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS) #Draw right hand connections
 
-def draw_styled_landmarks (image, results):
-    #Draw face connections
-    mp_drawing.draw_landmarks(image, results. face_landmarks, mp_holistic.FACEMESH_TESSELATION,
-                              mp_drawing.DrawingSpec(color=(80,110,10), thickness=1, circle_radius=1),
-                              mp_drawing.DrawingSpec(color=(80,256,121), thickness=1, circle_radius=1)
-                             )
-    # Draw pose connections
-    mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS,
-                              mp_drawing.DrawingSpec(color=(88,22,10), thickness=2, circle_radius=4),
-                              mp_drawing.DrawingSpec (color=(80, 44, 121), thickness=2, circle_radius=2)
-                             )
-    #Draw Left hand connections
-    mp_drawing.draw_landmarks (image, results. left_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
-                               mp_drawing.DrawingSpec(color=(121,22,76), thickness=2, circle_radius=4),
-                               mp_drawing.DrawingSpec (color=(121,44,250), thickness=2, circle_radius=2) 
-                              )
-    #Draw right hand connections
-    mp_drawing.draw_landmarks (image, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
-                               mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=4),
-                               mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2)
-                              )
+# def draw_styled_landmarks (image, results):
+#     #Draw face connections
+#     mp_drawing.draw_landmarks(image, results. face_landmarks, mp_holistic.FACEMESH_TESSELATION,
+#                               mp_drawing.DrawingSpec(color=(80,110,10), thickness=1, circle_radius=1),
+#                               mp_drawing.DrawingSpec(color=(80,256,121), thickness=1, circle_radius=1)
+#                              )
+#     # Draw pose connections
+#     mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS,
+#                               mp_drawing.DrawingSpec(color=(88,22,10), thickness=2, circle_radius=4),
+#                               mp_drawing.DrawingSpec (color=(80, 44, 121), thickness=2, circle_radius=2)
+#                              )
+#     #Draw Left hand connections
+#     mp_drawing.draw_landmarks (image, results. left_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
+#                                mp_drawing.DrawingSpec(color=(121,22,76), thickness=2, circle_radius=4),
+#                                mp_drawing.DrawingSpec (color=(121,44,250), thickness=2, circle_radius=2) 
+#                               )
+#     #Draw right hand connections
+#     mp_drawing.draw_landmarks (image, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
+#                                mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=4),
+#                                mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2)
+#                               )
 
-def extract_keypoints(results):
-    pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else np.zeros(132)
-    face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else np.zeros(21*3)
-    lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else np.zeros(21*3)
-    rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(21*3)
-    return np.concatenate([pose, face, lh, rh])
-    # Function to find the index of the first available camera
-def find_available_camera():
-    for i in range(10):  # Try the first 10 camera indices (adjust as needed)
-        cap = cv2.VideoCapture(i)
-        if cap.isOpened():
-            cap.release()  # Release the camera immediately
-            return i
-    return None  # No available cameras found
+# def extract_keypoints(results):
+#     pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else np.zeros(132)
+#     face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else np.zeros(21*3)
+#     lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else np.zeros(21*3)
+#     rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(21*3)
+#     return np.concatenate([pose, face, lh, rh])
+#     # Function to find the index of the first available camera
+# def find_available_camera():
+#     for i in range(10):  # Try the first 10 camera indices (adjust as needed)
+#         cap = cv2.VideoCapture(i)
+#         if cap.isOpened():
+#             cap.release()  # Release the camera immediately
+#             return i
+#     return None  # No available cameras found
 
 
     
@@ -108,6 +242,7 @@ def download_file(file_id):
 
     try:
         save_directory = "videos/"
+        print(get_video_url(file_id))
         video_file_path = download_video(file_id, save_directory)
         subtitle_file_path = create_subtitle_file(video_file_path)
         destination_blob_name = f"posts/subtitles/{os.path.basename(video_file_path)}.vtt"
@@ -116,6 +251,8 @@ def download_file(file_id):
         # Clean up: Remove the local VTT and video files
         os.remove(subtitle_file_path)
         os.remove(video_file_path)
+        file_id_to_update = "652bf32459fbeea9aea09f1f"
+        update_subtitle_status(file_id_to_update)
 
         return f"Subtitles uploaded to Firebase Storage as {destination_blob_name}"
     except Exception as e:
@@ -144,76 +281,95 @@ def upload_file():
         return "File uploaded successfully"
     except Exception as e:
         return str(e), 500
-@app.route('/model', methods=['GET'])
-def model():
-    # 1. New detection variables
-    model = tf.keras.models.load_model('./Action.h5')
-    actions = np.array(['hello', 'thanks', 'iloveyou'])
-    sentence = []
-    sequence = []
-    predictions = []
-    threshold = 0.7
-    val = ''
+@app.route('/mongo/<string:file_id>', methods=['GET'])
+def mongo(file_id):
+        file_id_to_update = "652bf32459fbeea9aea09f1f"
+        get_video(file_id)
+        update_subtitle_status(file_id)
+        return "done"
 
-    cap = cv2.VideoCapture('1.mp4')
+# @app.route('/model', methods=['GET'])
+# def model():
+#     # 1. New detection variables
+#     model = tf.keras.models.load_model('./Action.h5')
+#     actions = np.array(['hello', 'thanks', 'iloveyou'])
+#     sentence = []
+#     sequence = []
+#     predictions = []
+#     threshold = 0.7
+#     val = ''
 
-    # Set mediopipe model
-    with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-        while cap.isOpened():
+#     cap = cv2.VideoCapture('1.mp4')
 
-            # Read feed
-            ret, frame = cap.read()
+#     # Set mediopipe model
+#     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+#         while cap.isOpened():
+
+#             # Read feed
+#             ret, frame = cap.read()
             
-            # Make detections
-            if not ret:
-                break  # End of video, break out of the loop
+#             # Make detections
+#             if not ret:
+#                 break  # End of video, break out of the loop
 
-            #Make detections
-            image, results = mediapipe_detection(frame, holistic)
-    #         print(results)
+#             #Make detections
+#             image, results = mediapipe_detection(frame, holistic)
+#     #         print(results)
 
-            #Draw Landmarks
-            draw_styled_landmarks(image, results)
+#             #Draw Landmarks
+#             draw_styled_landmarks(image, results)
 
-            #2. Prediction Logic
-            keypoints = extract_keypoints(results)
-    #         sequence.insert(0,keypoints)
-            sequence.append(keypoints)
-            sequence = sequence[-29:]
-    #         print(len(sequence))
+#             #2. Prediction Logic
+#             keypoints = extract_keypoints(results)
+#     #         sequence.insert(0,keypoints)
+#             sequence.append(keypoints)
+#             sequence = sequence[-29:]
+#     #         print(len(sequence))
 
-            if len(sequence) == 29:
-                res = model.predict(np.expand_dims(sequence, axis=0))[0]
-                if (val != actions [np.argmax(res)]):
-                    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-                    print(actions [np.argmax(res)])
-                val = actions [np.argmax(res)]
-                predictions.append(np.argmax(res))
+#             if len(sequence) == 29:
+#                 res = model.predict(np.expand_dims(sequence, axis=0))[0]
+#                 if (val != actions [np.argmax(res)]):
+#                     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+#                     print(actions [np.argmax(res)])
+#                 val = actions [np.argmax(res)]
+#                 predictions.append(np.argmax(res))
 
-            #3. Viz Logic
-                if np.unique(predictions[-10:])[0]== np.argmax(res):
-                    if res[np.argmax(res)] > threshold:
-                        if len(sentence) > 0:
-                            if actions[np.argmax(res)] != sentence[-1]:
-                                sentence.append(actions[np.argmax(res)])
-                        else:
-                            sentence.append(actions[np.argmax(res)])
-                if len(sentence) > 5:
-                    sentence = sentence[-5:]
+#             #3. Viz Logic
+#                 if np.unique(predictions[-10:])[0]== np.argmax(res):
+#                     if res[np.argmax(res)] > threshold:
+#                         if len(sentence) > 0:
+#                             if actions[np.argmax(res)] != sentence[-1]:
+#                                 sentence.append(actions[np.argmax(res)])
+#                         else:
+#                             sentence.append(actions[np.argmax(res)])
+#                 if len(sentence) > 5:
+#                     sentence = sentence[-5:]
             
-            cv2.rectangle(image, (0,0), (640, 40), (245, 117, 16), -1)
-            cv2.putText(image,''.join(sentence), (3,30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+#             cv2.rectangle(image, (0,0), (640, 40), (245, 117, 16), -1)
+#             cv2.putText(image,''.join(sentence), (3,30),
+#                         cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
-            # Show to screen
-            cv2.imshow('OpenCV Feed', image)
+#             # Show to screen
+#             cv2.imshow('OpenCV Feed', image)
 
-            # Break gracefully
-            if cv2.waitKey(10) & 0xFF == ord('q'):
-                break
-        cap.release()
-        cv2.destroyAllWindows()
-        return "model"
+#             # Break gracefully
+#             if cv2.waitKey(10) & 0xFF == ord('q'):
+#                 break
+#         cap.release()
+#         cv2.destroyAllWindows()
+#         return "model"
+# @app.route('/posts/<string:post_id>', methods=['GET'])
+# def get_post(post_id):
+#     try:
+#         collection = db['posts']  # Replace 'posts' with your collection name
+#         post = collection.find_one({"_id": ObjectId(post_id)})
+#         if post:
+#             del post['_id']
+#             return jsonify({"post": post})
+#         else:
+#             return jsonify({"message": "Post not found"}), 404
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
 
