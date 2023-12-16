@@ -11,7 +11,7 @@ import os
 from pymongo import MongoClient
 from bson import ObjectId
 from urllib.parse import quote
-
+from flask_cors import CORS
 
 
 
@@ -22,6 +22,7 @@ firebase_admin.initialize_app(cred)
 
 
 app = Flask(__name__)
+CORS(app, origins="*")
 # app.config['MONGO_URI'] = 'mongodb+srv://ishan:1998@cluster0.zhsvvlw.mongodb.net/?retryWrites=true&w=majority'
 # mongo = MongoClient(app.config['MONGO_URI'])
 # db = mongo.test
