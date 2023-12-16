@@ -332,7 +332,7 @@ def model():
     threshold = 0.7
     val = ''
 
-    cap = cv2.VideoCapture('v.mp4')
+    cap = cv2.VideoCapture(os.path.join(base_dir, 'v.mp4'))
 
     # Set mediopipe model
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
