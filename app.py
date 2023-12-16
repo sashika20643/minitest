@@ -93,7 +93,7 @@ def show_all_posts():
 # Call the function to show all posts
 
 
-def update_subtitle_status(file_id):
+def update_subtitle_status(file_id,url):
     # Replace the following connection string with your MongoDB connection string
     mongo_uri = "mongodb+srv://ishan:1998@cluster0.zhsvvlw.mongodb.net/?retryWrites=true&w=majority"
     
@@ -116,6 +116,11 @@ def update_subtitle_status(file_id):
     
     # Prepare the update
     update = {"$set": {"subtitle_status": "generated"}}
+
+    # Perform the update
+    result = collection.update_one(query, update)
+        # Prepare the update
+    update = {"$set": {"subtitle_url": url}}
 
     # Perform the update
     result = collection.update_one(query, update)
@@ -178,6 +183,25 @@ def upload_subtitle_to_firebase(subtitle_file_path, destination_blob_name):
     blob.upload_from_filename(subtitle_file_path)
     print("Subtitle uploaded")
     return 1
+def upload_sub(id):
+    subtitle_text = "WEBVTT\n\n0:00:00.000 --> 0:00:02.000\nSubtitle line 1\n\n0:00:02.001 --> 0:00:04.000\nSubtitle line 2"
+    bucket = firebase_admin.storage.bucket(app=firebase_admin.get_app(), name="social-lips.appspot.com")
+    destination_blob_name = f"posts/subtitles/{id}.vtt"
+    blob = bucket.blob(destination_blob_name)
+    subtitle_bytes = subtitle_text.encode('utf-8')
+
+    
+
+    # Upload the subtitle text directly from bytes
+    blob.upload_from_string(subtitle_bytes, content_type='text/vtt')
+
+    print("Subtitle uploaded")
+    public_url = blob.public_url
+
+    print(f"Public URL for subtitle: {public_url}")
+    
+    return public_url
+    
 # mp_holistic = mp.solutions.holistic # Holistic model
 # mp_drawing = mp.solutions.drawing_utils # Drawing utilities
 
@@ -286,7 +310,13 @@ def upload_file():
 def mongo(file_id):
         file_id_to_update = "652bf32459fbeea9aea09f1f"
         get_video(file_id)
-        update_subtitle_status(file_id)
+        url=upload_sub(file_id)
+        update_subtitle_status(file_id,url)
+
+        return "done"
+@app.route('/uploadsub', methods=['GET'])
+def uploadsub():
+        upload_sub()
         return "done"
 
 # @app.route('/model', methods=['GET'])
