@@ -329,7 +329,7 @@ def model():
 
     # Check if the file exists
     if os.path.exists(model_path):
-        print(f"The model file exists at: {os.path.abspath(model_path)}")
+        return os.path.abspath(model_path)
     # model = tf.keras.models.load_model(model_path)
     # print(f"Model path: {model_path}")
     # model = tf.keras.models.load_model(model_path)
