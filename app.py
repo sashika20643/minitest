@@ -443,7 +443,7 @@ def model():
 
     # Print the generated subtitle string
     print(subtitle_string)
-    return "done"
+    return subtitle_string
 
 # @app.route('/posts/<string:post_id>', methods=['GET'])
 # def get_post(post_id):
