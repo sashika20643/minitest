@@ -221,8 +221,7 @@ def upload_subtitle_to_firebase(subtitle_file_path, destination_blob_name):
     blob.upload_from_filename(subtitle_file_path)
     print("Subtitle uploaded")
     return 1
-def upload_sub(id):
-    subtitle_text = "WEBVTT\n\n0:00:00.000 --> 0:00:02.000\nSubtitle line 1\n\n0:00:02.001 --> 0:00:04.000\nSubtitle line 2"
+def upload_sub(id,subtitle_text):
     bucket = firebase_admin.storage.bucket(app=firebase_admin.get_app(), name="social-lips.appspot.com")
     destination_blob_name = f"posts/subtitles/{id}.vtt"
     blob = bucket.blob(destination_blob_name)
@@ -293,30 +292,24 @@ def upload_file():
 def mongo(file_id):
         file_id_to_update = "652bf32459fbeea9aea09f1f"
         video_url=get_video(file_id)
+        subtitle_text = "WEBVTT\n\n0:00:00.000 --> 0:00:02.000\nSubtitle line 1\n\n0:00:02.001 --> 0:00:04.000\nSubtitle line 2"
 
-        url=upload_sub(file_id)
+
+        url=upload_sub(file_id,subtitle_text)
         update_subtitle_status(file_id,url)
 
         return "done"
-@app.route('/gcloud', methods=['GET'])
-def gclod():
-    # upload_to_bucket("action.h5", "social_mini", "action.h5")
-    url = f"https://storage.googleapis.com/staging.social-lips-398506.appspot.com/action.h5"
-    model_path = get_file('model.h5', url)
-
-
-
-    model = tf.keras.models.load_model(model_path)
-
-    return "model loded"
 
 
 
 
-@app.route('/model', methods=['GET'])
+@app.route('/model/<string:file_id>', methods=['GET'])
 
-def model():
+def model(file_id):
   
+   
+    video_url=get_video(file_id)
+
 
     url = f"https://storage.googleapis.com/staging.social-lips-398506.appspot.com/action.h5"
     model_path = get_file('model.h5', url)
@@ -332,7 +325,7 @@ def model():
     threshold = 0.7
     val = ''
     action_start_frame = None
-    video_url='https://firebasestorage.googleapis.com/v0/b/social-lips.appspot.com/o/posts%2Fvideo%2FWIN_20231216_17_31_50_Pro.mp4?alt=media&token=43da0e1a-b7b2-48fb-a4a5-b0edfb067142'
+    # video_url='https://firebasestorage.googleapis.com/v0/b/social-lips.appspot.com/o/posts%2Fvideo%2FWIN_20231216_17_31_50_Pro.mp4?alt=media&token=43da0e1a-b7b2-48fb-a4a5-b0edfb067142'
     cap = cv2.VideoCapture(video_url)
     fps = cap.get(cv2.CAP_PROP_FPS)
     total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
@@ -463,20 +456,10 @@ def model():
             
             # Append subtitle entry
             subtitle_string += f"{start_time_str} --> {end_time_str}\n{action}\n\n"
+    sub_url=upload_sub(file_id,subtitle_string)
+    update_subtitle_status(file_id,sub_url)
     return subtitle_string
 
-# @app.route('/posts/<string:post_id>', methods=['GET'])
-# def get_post(post_id):
-#     try:
-#         collection = db['posts']  # Replace 'posts' with your collection name
-#         post = collection.find_one({"_id": ObjectId(post_id)})
-#         if post:
-#             del post['_id']
-#             return jsonify({"post": post})
-#         else:
-#             return jsonify({"message": "Post not found"}), 404
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
 
