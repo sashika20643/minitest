@@ -25,7 +25,9 @@ from tensorflow.keras.utils import get_file
 
 
 
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+print(tf.__version__)
+
 cred = credentials.Certificate("./social-lips-firebase-adminsdk-c28zn-d607a10c33.json")
 firebase_admin.initialize_app(cred)
 
