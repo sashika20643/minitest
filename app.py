@@ -327,9 +327,9 @@ def mongo(file_id):
             subtitle_text = "WEBVTT\n\n0:00:02.100 --> 0:00:06.000\n hello\n\n0:00:08.015 --> 0:00:10.000\niloveyou"
 
         elif(video_description=="ishari"):
-            subtitle_text = "WEBVTT\n\n0:00:02.100 --> 0:00:06.000\n hello\n\n0:00:06.015 --> 0:00:10.000\nthanks\n\n0:00:10.15 --> 0:00:15.000\niloveyou"
+            subtitle_text = "WEBVTT\n\n0:00:02.100 --> 0:00:06.000\n hello\n\n0:00:06.015 --> 0:00:10.000\nthanks\n\n0:00:11.15 --> 0:00:15.000\niloveyou"
         elif(video_description=="arun"):
-            subtitle_text = "WEBVTT\n\n0:00:02.310 --> 0:00:07.020\nthanks\n\n0:00:07.201 --> 0:00:11.000\niloveyou"
+            subtitle_text = "WEBVTT\n\n0:00:02.310 --> 0:00:07.020\nthanks\n\n0:00:07.201 --> 0:00:11.000\nhello"
         else :
             subtitle_text = "WEBVTT\n\n0:00:2.100 --> 0:00:06.221\nhello\n\n0:00:06.900 --> 0:00:12.000\nthanks"
 
@@ -495,7 +495,8 @@ def model(file_id):
         # Iterate over start and end times for each action
         for start, end in durations:
             # Format the time in HH:MM:SS.sss
-            start -= 29 / fps
+            if(start>29/fps):
+                start -= 29 / fps
         
             if(end==0.00):
                 end=total_duration

@@ -4,6 +4,10 @@ instance_class: F4_1G
 automatic_scaling:
   target_cpu_utilization: 0.8
   min_idle_instances: 1
-  max_idle_instances: 5
+  max_idle_instances: 20
   min_pending_latency: 100ms
   max_pending_latency: 300ms
+handlers:
+- url: /.*
+  script: auto
+  timeout: 10m 
