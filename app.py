@@ -292,6 +292,7 @@ def upload_file():
 def mongo(file_id):
         file_id_to_update = "652bf32459fbeea9aea09f1f"
         video_url=get_video(file_id)
+
         subtitle_text = "WEBVTT\n\n0:00:00.000 --> 0:00:02.000\nSubtitle line 1\n\n0:00:02.001 --> 0:00:04.000\nSubtitle line 2"
 
 
@@ -434,7 +435,6 @@ def model(file_id):
     # ...
 
     
-    sorted_durations = sorted(action_durations.items(), key=lambda x: x[1][0][0])
 
 
 
@@ -457,8 +457,9 @@ def model(file_id):
             if(end==0.00):
                 end=total_duration
             end -= 29 / fps
-            start_time_str = datetime.timedelta(seconds=start)
-            end_time_str = datetime.timedelta(seconds=end)
+            start_time_str = (datetime.datetime.min + datetime.timedelta(seconds=start)).strftime('%H:%M:%S.%f')[:-3]
+            end_time_str = (datetime.datetime.min + datetime.timedelta(seconds=end)).strftime('%H:%M:%S.%f')[:-3]
+            
             
             # Append subtitle entry
             subtitle_string += f"{start_time_str} --> {end_time_str}\n{action}\n\n"
