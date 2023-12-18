@@ -18,6 +18,8 @@ import io
 from tensorflow.keras.utils import get_file
 from moviepy.editor import VideoFileClip
 import threading
+import time
+
 
 
 
@@ -490,6 +492,7 @@ def mongo(file_id):
         file_id_to_update = "652bf32459fbeea9aea09f1f"
         video_url=get_video(file_id)
         video_description= get_description(file_id)
+        time.sleep(5)
         if(video_description=="ishan"):
             subtitle_text = "WEBVTT\n\n0:00:02.100 --> 0:00:06.000\n hello\n\n0:00:08.015 --> 0:00:10.000\niloveyou"
 
