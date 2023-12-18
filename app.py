@@ -328,11 +328,14 @@ def model(file_id):
     # video_url='https://firebasestorage.googleapis.com/v0/b/social-lips.appspot.com/o/posts%2Fvideo%2FWIN_20231216_17_31_50_Pro.mp4?alt=media&token=43da0e1a-b7b2-48fb-a4a5-b0edfb067142'
     cap = cv2.VideoCapture(video_url)
     fps = cap.get(cv2.CAP_PROP_FPS)
-    total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-    video_clip = VideoFileClip(video_url)
+    total_frames = cap.get(cv2.CAP_PROP_POS_FRAMES)
+    frame_count=0
+    last_frame=0
 
     # Get the total duration in seconds
-    total_duration = video_clip.duration
+    total_duration = 13.1
+    print (total_duration)
+
     print(total_duration)
     actionrecord=""
 
@@ -345,9 +348,11 @@ def model(file_id):
     # Set mediopipe model
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
         while cap.isOpened():
+            frame_count+=1
 
             # Read feed
             ret, frame = cap.read()
+            last_frame=cap.get(cv2.CAP_PROP_POS_MSEC)
 
             # Make detections
             if not ret:
@@ -355,8 +360,8 @@ def model(file_id):
                 if action_start_frame is not None:
                     action_end_frame = cap.get(cv2.CAP_PROP_POS_MSEC)
                     action_start_time = action_start_frame / 1000  # Convert milliseconds to seconds
-                
-                    action_end_time =  total_duration
+                    
+                    action_end_time = total_duration
                     action_durations[actionrecord].append((action_start_time, action_end_time))
                 break  # End of video, break out of the loop
 
@@ -428,7 +433,7 @@ def model(file_id):
 
     # ...
 
-
+    
 
 
 
