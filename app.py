@@ -70,6 +70,36 @@ def get_video(file_id):
     # Close the MongoDB connection
     client.close()
 
+def get_description(file_id):
+    # Replace the following connection string with your MongoDB connection string
+    mongo_uri = "mongodb+srv://ishan:1998@cluster0.zhsvvlw.mongodb.net/?retryWrites=true&w=majority"
+    
+    # Connect to MongoDB
+    client = MongoClient(mongo_uri)
+    
+    # Specify the database and collection
+    db = client.test
+    collection = db.posts
+    
+    # Convert the file_id string to ObjectId
+    object_id = ObjectId(file_id)
+
+    # Prepare the query
+    query = {"_id": object_id}
+    
+    # Fetch the document
+    result = collection.find_one(query)
+
+    # Check if the document was found
+    if result:
+        description = result.get("description", "")
+     
+        return description
+    else:
+        print(f"No document found with file_id {file_id}")
+
+    # Close the MongoDB connection
+    client.close()
 
 def show_all_posts():
     # Replace the following connection string with your MongoDB connection string
@@ -292,8 +322,21 @@ def upload_file():
 def mongo(file_id):
         file_id_to_update = "652bf32459fbeea9aea09f1f"
         video_url=get_video(file_id)
+        video_description= get_description(file_id)
+        if(video_description=="ishan"):
+            subtitle_text = "WEBVTT\n\n0:00:02.100 --> 0:00:06.000\n hello\n\n0:00:08.015 --> 0:00:10.000\niloveyou"
 
-        subtitle_text = "WEBVTT\n\n0:00:00.000 --> 0:00:02.000\nSubtitle line 1\n\n0:00:02.001 --> 0:00:04.000\nSubtitle line 2"
+        elif(video_description=="ishari"):
+            subtitle_text = "WEBVTT\n\n0:00:02.100 --> 0:00:06.000\n hello\n\n0:00:06.015 --> 0:00:10.000\nthanks\n\n0:00:10.15 --> 0:00:15.000\niloveyou"
+        elif(video_description=="arun"):
+            subtitle_text = "WEBVTT\n\n0:00:02.310 --> 0:00:07.020\nthanks\n\n0:00:07.201 --> 0:00:11.000\niloveyou"
+        else :
+            subtitle_text = "WEBVTT\n\n0:00:2.100 --> 0:00:06.221\nhello\n\n0:00:06.900 --> 0:00:12.000\nthanks"
+
+
+
+        
+
 
 
         url=upload_sub(file_id,subtitle_text)
