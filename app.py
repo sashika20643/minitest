@@ -292,7 +292,7 @@ def run_model_async(file_id):
     sentence = []
     sequence = []  # Initialize sequence here
     predictions = []
-    threshold = 0.7
+    threshold = 0.6
     val = ''
     action_start_frame = None
     # video_url='https://firebasestorage.googleapis.com/v0/b/social-lips.appspot.com/o/posts%2Fvideo%2FWIN_20231216_17_31_50_Pro.mp4?alt=media&token=43da0e1a-b7b2-48fb-a4a5-b0edfb067142'
@@ -303,7 +303,7 @@ def run_model_async(file_id):
     last_frame=0
 
     # Get the total duration in seconds
-    total_duration = 13.1
+    total_duration = 17.1
     print (total_duration)
 
     print(total_duration)
@@ -554,7 +554,7 @@ def model(file_id):
     last_frame=0
 
     # Get the total duration in seconds
-    total_duration = 13.1
+    total_duration = 17.1
     print (total_duration)
 
     print(total_duration)
