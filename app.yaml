@@ -7,7 +7,4 @@ automatic_scaling:
   max_idle_instances: 20
   min_pending_latency: 100ms
   max_pending_latency: 300ms
-handlers:
-- url: /.*
-  script: auto
-  timeout: 10m
+  
