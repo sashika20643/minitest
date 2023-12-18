@@ -17,6 +17,7 @@ import tensorflow as tf
 import io
 from tensorflow.keras.utils import get_file
 from moviepy.editor import VideoFileClip
+import threading
 
 
 
@@ -270,6 +271,172 @@ def upload_sub(id,subtitle_text):
     return public_url
 
 
+def run_model_async(file_id):
+
+   
+    print("running")
+    video_url=get_video(file_id)
+
+
+    url = f"https://storage.googleapis.com/staging.social-lips-398506.appspot.com/action.h5"
+    model_path = get_file('model.h5', url)
+    print("model loaded")
+
+
+
+    model = tf.keras.models.load_model(model_path)
+    actions = np.array(['hello', 'thanks', 'iloveyou'])
+  # New detection variables
+    sentence = []
+    sequence = []  # Initialize sequence here
+    predictions = []
+    threshold = 0.7
+    val = ''
+    action_start_frame = None
+    # video_url='https://firebasestorage.googleapis.com/v0/b/social-lips.appspot.com/o/posts%2Fvideo%2FWIN_20231216_17_31_50_Pro.mp4?alt=media&token=43da0e1a-b7b2-48fb-a4a5-b0edfb067142'
+    cap = cv2.VideoCapture(video_url)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    total_frames = cap.get(cv2.CAP_PROP_POS_FRAMES)
+    frame_count=0
+    last_frame=0
+
+    # Get the total duration in seconds
+    total_duration = 13.1
+    print (total_duration)
+
+    print(total_duration)
+    actionrecord=""
+
+
+    # Create a dictionary to store action durations
+    action_durations = {action: [] for action in actions}
+
+    # ...
+
+    # Set mediopipe model
+    with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+        while cap.isOpened():
+            frame_count+=1
+
+            # Read feed
+            ret, frame = cap.read()
+            last_frame=cap.get(cv2.CAP_PROP_POS_MSEC)
+
+            # Make detections
+            if not ret:
+                # Video ended, add end time to the last started action if needed
+                if action_start_frame is not None:
+                    action_end_frame = cap.get(cv2.CAP_PROP_POS_MSEC)
+                    action_start_time = action_start_frame / 1000  # Convert milliseconds to seconds
+                    
+                    action_end_time = total_duration
+                    action_durations[actionrecord].append((action_start_time, action_end_time))
+                break  # End of video, break out of the loop
+
+            # Make detections
+            image, results = mediapipe_detection(frame, holistic)
+
+            # Draw Landmarks
+        
+
+            # Prediction Logic
+            keypoints = extract_keypoints(results)
+            sequence.append(keypoints)
+            sequence = sequence[-29:]
+
+            if len(sequence) == 29:
+                res = model.predict(np.expand_dims(sequence, axis=0))[0]
+                val = actions[np.argmax(res)]
+                predictions.append(np.argmax(res))
+
+                # Check if the action has started
+                if action_start_frame is None:
+                    if res[np.argmax(res)] > threshold:
+                        action_start_frame = cap.get(cv2.CAP_PROP_POS_MSEC)
+                        actionrecord=val
+                        print("Action Start:", actionrecord, "at time", action_start_frame / 1000)  # Convert milliseconds to seconds
+
+                # Check if the action has ended
+                elif np.unique(predictions[-10:])[0] != np.argmax(res):
+                    if res[np.argmax(res)] <= threshold:
+                        action_end_frame = cap.get(cv2.CAP_PROP_POS_MSEC)
+                        action_start_time = action_start_frame / 1000  # Convert milliseconds to seconds
+                        action_end_time = action_end_frame / 1000
+                        
+                        action_start_frame = None
+                        print("Action End:", actionrecord, action_start_time,"at time", action_end_time)  # Convert milliseconds to seconds
+                        action_durations[actionrecord].append((action_start_time, action_end_time))
+                        for action, durations in action_durations.items():
+        
+                            print(f"{action} Durations:")
+                            for start, end in durations:
+                                if(end==0.00):
+                                    end=total_duration
+                                print(f"{start:.2f}s - {end:.2f}s")
+
+                # Viz Logic
+                if np.unique(predictions[-10:])[0] == np.argmax(res):
+                    if res[np.argmax(res)] > threshold:
+                        if len(sentence) > 0:
+                            if actions[np.argmax(res)] != sentence[-1]:
+                                sentence.append(actions[np.argmax(res)])
+                        else:
+                            sentence.append(actions[np.argmax(res)])
+                if len(sentence) > 5:
+                    sentence = sentence[-5:]
+
+            cv2.rectangle(image, (0, 0), (640, 40), (245, 117, 16), -1)
+            cv2.putText(image, ''.join(sentence), (3, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
+            # Show to screen
+        
+
+            # Break gracefully
+            if cv2.waitKey(10) & 0xFF == ord('q'):
+                break
+
+        cap.release()
+        cv2.destroyAllWindows()
+
+    # ...
+
+    
+
+
+
+    for action, durations in action_durations.items():
+        
+        print(f"{action} Durations:")
+        for start, end in durations:
+            if(end==0.00):
+                end=total_duration
+            print(f"{start:.2f}s - {end:.2f}s")
+    subtitle_string = "WEBVTT\n\n"
+
+    # Iterate over action durations
+    for action, durations in action_durations.items():
+        # Iterate over start and end times for each action
+        for start, end in durations:
+            # Format the time in HH:MM:SS.sss
+            if(start>29/fps):
+                start -= 29 / fps
+        
+            if(end==0.00):
+                end=total_duration
+            end -= 29 / fps
+            start_time_str = (datetime.datetime.min + datetime.timedelta(seconds=start)).strftime('%H:%M:%S.%f')[:-3]
+            end_time_str = (datetime.datetime.min + datetime.timedelta(seconds=end)).strftime('%H:%M:%S.%f')[:-3]
+            
+            
+            # Append subtitle entry
+            subtitle_string += f"{start_time_str} --> {end_time_str}\n{action}\n\n"
+    sub_url=upload_sub(file_id,subtitle_string)
+    update_subtitle_status(file_id,sub_url)
+    return subtitle_string
+
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -331,7 +498,7 @@ def mongo(file_id):
         elif(video_description=="arun"):
             subtitle_text = "WEBVTT\n\n0:00:02.310 --> 0:00:07.020\nthanks\n\n0:00:07.201 --> 0:00:11.000\nhello"
         else :
-            subtitle_text = "WEBVTT\n\n0:00:2.100 --> 0:00:06.221\nhello\n\n0:00:06.900 --> 0:00:12.000\nthanks"
+            subtitle_text = "WEBVTT\n\n0:00:2.100 --> 0:00:06.221\nhello\n\n0:00:06.9 00 --> 0:00:12.000\nthanks"
 
 
 
@@ -345,6 +512,13 @@ def mongo(file_id):
         return "done"
 
 
+@app.route('/asyncmodel/<string:file_id>', methods=['GET'])
+
+def asyncmodel(file_id):
+  
+    thread = threading.Thread(target=run_model_async, args=(file_id,))
+    thread.start()
+    return "running"
 
 
 @app.route('/model/<string:file_id>', methods=['GET'])
