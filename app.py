@@ -434,6 +434,7 @@ def model(file_id):
     # ...
 
     
+    sorted_durations = sorted(action_durations.items(), key=lambda x: x[1][0][0])
 
 
 
